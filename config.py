@@ -42,6 +42,7 @@ class VAEConfig:
     mse_weight: float
     ssim_weight: float
     kld_weight: float
+    quantize: int
 
 
 @dataclass
