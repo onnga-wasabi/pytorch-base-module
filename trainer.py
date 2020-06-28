@@ -1,4 +1,3 @@
-import os
 import json
 from tqdm import tqdm
 import dataclasses
@@ -11,12 +10,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 from .config import Config
 
-from dotenv import load_dotenv
-
-dotenv_path = os.path.join(os.path.dirname(__file__), '../..', '.env')
-load_dotenv(dotenv_path)
-WANDB_PROJECT_NAME = os.environ['WANDB_PROJECT_NAME']
-
 
 @dataclasses.dataclass
 class State:
@@ -28,8 +21,6 @@ class State:
 
 class BaseTrainer(object):
 
-    wandb = wandb
-
     def __init__(
         self,
         config: Config,
@@ -37,6 +28,7 @@ class BaseTrainer(object):
         data_loader: torch.utils.data.DataLoader,
         log_dir: str,
         val_data_loader: torch.utils.data.DataLoader = None,
+        wandb_project_name: str = None,
     ):
         self.config = config
         self.network = network
@@ -45,11 +37,15 @@ class BaseTrainer(object):
         self.log_dir = log_dir
         self.writer = SummaryWriter(log_dir=self.log_dir)
 
-        self.wandb.init(
-            name=config.name,
-            project=WANDB_PROJECT_NAME,
-            config=dataclasses.asdict(config),
-        )
+        if wandb_project_name:
+            self.wandb = wandb
+            self.wandb.init(
+                name=config.name,
+                project=wandb_project_name,
+                config=dataclasses.asdict(config),
+            )
+        else:
+            self.wandb = None
 
         self.results = {'train': []}
 
@@ -77,7 +73,8 @@ class BaseTrainer(object):
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
             self.network = nn.DataParallel(self.network)
-            self.wandb.watch(self.network.module, log='all')
+            if self.wandb:
+                self.wandb.watch(self.network.module, log='all')
 
     def extra_setup(self):
         pass
@@ -124,7 +121,8 @@ class BaseTrainer(object):
     def iteration_end(self, computed):
         for k, v in computed['log'].items():
             self.writer.add_scalar(f'Train/{k}', v, self.state.iteration)
-            self.wandb.log({f'Train/{k}': v})
+            if self.wandb:
+                self.wandb.log({f'Train/{k}': v})
 
         computed['log']['iteration'] = self.state.iteration
         computed['log']['epoch'] = self.state.epoch
@@ -154,7 +152,8 @@ class BaseTrainer(object):
             metric = np.mean([r['log'][k] for r in results])
             logs[k] = metric
             self.writer.add_scalar(f'Validation/{k}', metric, self.state.epoch)
-            self.wandb.log({f'Validation/{k}': metric})
+            if self.wandb:
+                self.wandb.log({f'Validation/{k}': metric})
 
         logs['epoch'] = self.state.epoch
         self.results['val'].append(logs)
