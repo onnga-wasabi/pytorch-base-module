@@ -17,6 +17,7 @@ class State:
     iteration: int
     epoch_pbar: tqdm
     iteration_pbar: tqdm
+    best: float
 
 
 class BaseTrainer(object):
@@ -37,16 +38,6 @@ class BaseTrainer(object):
         self.log_dir = log_dir
         self.writer = SummaryWriter(log_dir=self.log_dir)
 
-        if wandb_project_name:
-            self.wandb = wandb
-            self.wandb.init(
-                name=config.name,
-                project=wandb_project_name,
-                config=dataclasses.asdict(config),
-            )
-        else:
-            self.wandb = None
-
         self.results = {'train': []}
 
         if val_data_loader:
@@ -59,9 +50,11 @@ class BaseTrainer(object):
             iteration=0,
             epoch_pbar=tqdm(total=self.config.experiment.epoch, leave=False, ncols=100),
             iteration_pbar=tqdm(total=len(self.data_iter), leave=False, ncols=150),
+            best=np.inf,
         )
 
         self.device_setup()
+        self.wandb_setup(wandb_project_name)
         self.optimizer_setup()
         self.extra_setup()
 
@@ -73,8 +66,19 @@ class BaseTrainer(object):
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
             self.network = nn.DataParallel(self.network)
-            if self.wandb:
-                self.wandb.watch(self.network.module, log='all')
+
+    def wandb_setup(self, wandb_project_name):
+        if wandb_project_name:
+            self.wandb = wandb
+            self.wandb.init(
+                name=self.config.name,
+                project=wandb_project_name,
+                config=dataclasses.asdict(self.config),
+            )
+            network = self.network.module if isinstance(self.network, nn.DataParallel) else self.network
+            self.wandb.watch(network, log='all')
+        else:
+            self.wandb = None
 
     def extra_setup(self):
         pass
@@ -146,7 +150,7 @@ class BaseTrainer(object):
     def evaluate_func(self, batch):
         return self.compute(batch)
 
-    def evaluate_end(self, results):
+    def evaluate_end(self, results, condition_key: str = 'Loss'):
         logs = {}
         for k in results[0]['log'].keys():
             metric = np.mean([r['log'][k] for r in results])
@@ -157,6 +161,7 @@ class BaseTrainer(object):
 
         logs['epoch'] = self.state.epoch
         self.results['val'].append(logs)
+        self.save_weights(condition_key)
 
     def new_epoch(self):
         self.epoch_end()
@@ -187,6 +192,18 @@ class BaseTrainer(object):
         self.writer.close()
         self.state.epoch_pbar.close()
         self.save()
+
+    @torch.no_grad()
+    def save_weights(self, condition_key: str):
+        if self.results['val'][-1][condition_key] < self.state.best:
+            if isinstance(self.network, nn.DataParallel):
+                self.network = self.network.module
+            self.network = self.network.to('cpu')
+            torch.save(self.network.state_dict(), f'{self.log_dir}/model_best.pt')
+            self.device_setup()
+            self.state.best = self.results['val'][-1][condition_key]
+        else:
+            pass
 
     def compute(self, batch):
         raise NotImplementedError
