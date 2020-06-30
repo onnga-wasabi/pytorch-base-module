@@ -1,6 +1,6 @@
 import yaml
 from dataclasses import dataclass, fields, field
-from typing import List, Union
+from typing import List
 
 
 @dataclass
