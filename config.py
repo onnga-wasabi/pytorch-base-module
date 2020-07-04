@@ -1,6 +1,6 @@
 import yaml
 from dataclasses import dataclass, fields, field
-from typing import List
+from typing import Any, List, Union
 
 
 @dataclass
@@ -46,6 +46,12 @@ class VAEConfig:
 
 
 @dataclass
+class MobileNetConfig:
+    in_ch: int
+    block_setting: List[List[int]] = field(default_factory=list)
+
+
+@dataclass
 class ResumeConfig:
     config_name: str
 
@@ -54,6 +60,7 @@ class ResumeConfig:
 class ExternalConfig:
     sparse: SparseConifg
     vae: VAEConfig
+    mobilenet: MobileNetConfig
     resume: ResumeConfig
 
 
@@ -63,13 +70,13 @@ class Config:
     experiment: ExperimentConfig
     model: ModelConfig
     dataset: DatasetConfig
-    external_config: ExternalConfig = None
+    external_config: Union[ExternalConfig, None] = None
 
     def __name__(self):
         return self.name
 
 
-def load_from_dict(class_, dict_):
+def load_from_dict(class_, dict_) -> Union[Config, Any]:
     try:
         fieldtypes = {f.name: f.type for f in fields(class_)}
         return class_(**{f: load_from_dict(fieldtypes[f], dict_[f]) for f in dict_})
