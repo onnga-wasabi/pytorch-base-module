@@ -1,6 +1,6 @@
 import yaml
 from dataclasses import dataclass, fields, field
-from typing import Any, List, Union
+from typing import Any, List, Tuple, Union
 
 
 @dataclass
@@ -70,7 +70,7 @@ class Config:
     experiment: ExperimentConfig
     model: ModelConfig
     dataset: DatasetConfig
-    external_config: Union[ExternalConfig, None] = None
+    external_config: ExternalConfig = None
 
     def __name__(self):
         return self.name
@@ -89,5 +89,5 @@ def load_from_dict(class_, dict_) -> Union[Config, Any]:
 def create_config(config_path: str) -> Config:
     with open(config_path, "r") as rf:
         config_data = yaml.safe_load(rf)
-    config = load_from_dict(Config, config_data)
+    config: Config = load_from_dict(Config, config_data)
     return config
