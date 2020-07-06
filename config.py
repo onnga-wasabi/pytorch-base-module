@@ -1,3 +1,4 @@
+from modules.networks import discriminator
 import yaml
 from dataclasses import dataclass, fields, field
 from typing import Any, List, Tuple, Union
@@ -16,6 +17,11 @@ class ModelConfig:
     network: str
     latent_dim: int
     initialization: str
+
+
+@dataclass
+class GANConfig:
+    discriminator: str
 
 
 @dataclass
@@ -68,8 +74,9 @@ class ExternalConfig:
 class Config:
     name: str
     experiment: ExperimentConfig
-    model: ModelConfig
     dataset: DatasetConfig
+    model: ModelConfig
+    gan: GANConfig = None
     external_config: ExternalConfig = None
 
     def __name__(self):
