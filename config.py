@@ -1,7 +1,6 @@
-from modules.networks import discriminator
 import yaml
 from dataclasses import dataclass, fields, field
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Union
 
 
 @dataclass
