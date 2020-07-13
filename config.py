@@ -73,8 +73,8 @@ class ExternalConfig:
 class Config:
     name: str
     experiment: ExperimentConfig
-    dataset: DatasetConfig
     model: ModelConfig
+    dataset: DatasetConfig = None
     gan: GANConfig = None
     external_config: ExternalConfig = None
 
