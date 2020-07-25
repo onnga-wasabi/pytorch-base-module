@@ -46,6 +46,10 @@ class BaseTrainer(object):
             self.val_data_iter = iter(self.val_data_loader)
             self.results['val'] = []
 
+        self.device_setup()
+        self.wandb_setup(wandb_project_name)
+        self.optimizer_setup()
+
         self.state = State(
             epoch=0,
             iteration=0,
@@ -54,9 +58,6 @@ class BaseTrainer(object):
             best=np.inf,
         )
 
-        self.device_setup()
-        self.wandb_setup(wandb_project_name)
-        self.optimizer_setup()
         self.extra_setup()
 
     def device_setup(self):
