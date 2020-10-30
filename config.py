@@ -49,6 +49,7 @@ class VAEConfig:
     kld_weight: float
     localize_weight: float
     localize_amplify: float
+    localize_th: float
     quantize: int
 
 
