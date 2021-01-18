@@ -31,6 +31,7 @@ class DatasetConfig:
     adni: List[str] = field(default_factory=list)
     ppmi: List[str] = field(default_factory=list)
     fourrtni: List[str] = field(default_factory=list)
+    hd: List[str] = field(default_factory=list)
     pids: List[str] = field(default_factory=list)
     uids: List[int] = field(default_factory=list)
 
