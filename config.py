@@ -9,13 +9,15 @@ class ExperimentConfig:
     batch_size: int
     learing_rate: float
     updater: str
+    l1_weight: float
+    l2_weight: float
 
 
 @dataclass
 class ModelConfig:
     network: str
-    latent_dim: int
-    initialization: str
+    latent_dim: int = None
+    initialization: str = None
 
 
 @dataclass
