@@ -18,6 +18,7 @@ class ModelConfig:
     network: str
     latent_dim: int = None
     initialization: str = None
+    mid_ch: int = None
 
 
 @dataclass
